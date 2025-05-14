@@ -167,22 +167,7 @@ const Home = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {activeTab === "publicos" &&
-          (contactosPublicos.length > 0 ? (
-            contactosPublicos.map((contacto) => (
-              <ContactoCard
-                key={contacto._id}
-                contacto={contacto}
-                isOwner={user && contacto.propietario === user.id}
-                isAdmin={user && user.isAdmin}
-                onTogglePublico={handleTogglePublico}
-                onToggleVisible={handleToggleVisible}
-                onDelete={handleDeleteContacto}
-              />
-            ))
-          ) : (
-            <p className="col-span-3 text-center py-10">No hay contactos públicos disponibles.</p>
-          ))}
+        {activeTab === "publicos" && contactosPublicos.length > 0 && contactosPublicos.map((contacto) => ( <ContactoCard key={contacto._id} contacto={contacto} isOwner={user && contacto.propietario === user.id} isAdmin={user && user.isAdmin} onTogglePublico={handleTogglePublico} onToggleVisible={handleToggleVisible} onDelete={handleDeleteContacto} /> ))}
 
         {activeTab === "mis-contactos" &&
           (misContactos.length > 0 ? (
