@@ -182,8 +182,25 @@ app.get("/contacts/mis-contactos", auth, async (req, res) => {
 app.get("/contacts/all", auth, adminAuth, async (req, res) => {
   try {
     const contactos = await Contacto.find({ esUsuario: false }).sort({ apellido: 1, nombre: 1 })
-
     res.send(contactos)
+  } catch (error) {
+    res.status(500).send({ error: error.message })
+  }
+})
+
+// Endpoint para que el administrador cambie la visibilidad de un contacto público
+app.put("/contacts/:id/visible", auth, adminAuth, async (req, res) => {
+  try {
+    const contacto = await Contacto.findById(req.params.id)
+    if (!contacto) {
+      return res.status(404).send({ error: "Contacto no encontrado" })
+    }
+    if (!contacto.esPublico) {
+      return res.status(400).send({ error: "Solo se puede cambiar la visibilidad de contactos públicos" })
+    }
+    contacto.esVisible = !contacto.esVisible
+    await contacto.save()
+    res.send(contacto)
   } catch (error) {
     res.status(500).send({ error: error.message })
   }
@@ -277,24 +294,44 @@ app.put("/contacts/:id/publico", auth, async (req, res) => {
   }
 })
 
-app.put("/contacts/:id/visible", auth, adminAuth, async (req, res) => {
-  try {
-    const contacto = await Contacto.findById(req.params.id)
-
-    if (!contacto) {
-      return res.status(404).send({ error: "Contacto no encontrado" })
-    }
-
-    contacto.esVisible = !contacto.esVisible
-    await contacto.save()
-
-    res.send(contacto)
-  } catch (error) {
-    res.status(400).send({ error: error.message })
-  }
-})
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`)
-})
+  console.log("Servidor corriendo en el puerto " + PORT);
+  // Crear usuario administrador si no existe
+  (async () => {
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@gmail.com";
+      const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+      const adminNombre = process.env.ADMIN_NOMBRE || "Admin";
+      const adminApellido = process.env.ADMIN_APELLIDO || "Principal";
+      let admin = await Usuario.findOne({ email: adminEmail });
+      if (!admin) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(adminPassword, salt);
+        admin = new Usuario({
+          nombre: adminNombre,
+          apellido: adminApellido,
+          email: adminEmail,
+          password: hashedPassword,
+          isAdmin: true,
+        });
+        await admin.save();
+        // Crear contacto asociado al admin
+        const contacto = new Contacto({
+          nombre: adminNombre,
+          apellido: adminApellido,
+          email: adminEmail,
+          propietario: admin._id,
+          esUsuario: true,
+        });
+        await contacto.save();
+        console.log("Usuario administrador creado:", adminEmail);
+      } else {
+        console.log("Usuario administrador ya existe:", adminEmail);
+      }
+    } catch (err) {
+      console.error("Error creando usuario administrador:", err);
+    }
+  })();
+});

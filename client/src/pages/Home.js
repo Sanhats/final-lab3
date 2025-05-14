@@ -202,7 +202,7 @@ const Home = () => {
           ))}
 
         {activeTab === "todos" &&
-          user.isAdmin &&
+          user && user.isAdmin &&
           (todosContactos.length > 0 ? (
             todosContactos.map((contacto) => (
               <ContactoCard
